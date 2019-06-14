@@ -1,0 +1,101 @@
+---
+- hosts: "{{ dest_hosts }}"  #业务主机(集群)
+  any_errors_fatal: true
+  serial: "{{ batch }}"
+  vars:  #在upstream.conf中唯一标识一个后端服务节点(ip:port or hostname:port)
+    ip_port: '{{ ansible_facts["eth0"]["ipv4"]["address"] }}:{{ project_port }}'
+    hostname_port: '{{ ansible_facts["hostname"] }}:{{ project_port }}'
+  #remote_user: "{{ run_user }}"
+
+  tasks:
+    - name: Rsync update to dest server
+      synchronize: 
+        src: "{{ src }}"
+        dest: "{{ dest }}"
+        delete: yes
+
+    - block:
+        - name: Detect backend server numbers [decide whether kickout it or not]
+          shell: egrep -C 5 "({{ ip_port }}|{{ hostname_port }})" {{ nginx_upstream_conf_local }} |awk '{printf($0," ")}'|egrep -o "{[^}]*({{ ip_port }}|{{ hostname_port }})[^{]*"|grep -wo {{ project_port }}|wc -l  #兼容ip:port和hostname:port形式
+          #delegate_to: localhost  #委托本机来做
+          register: num
+          #when: nginx_upstream_conf_remote is defined
+
+        - name: Kickout [{{ hostname_port }} from [{{ nginx_hosts_group }}] step 1 [modify upstream.conf with sed]
+          shell: sed --in-place=_sed_bak -e 's/\([^#]\)\(server \+{{ ip_port }}\)/\1#auto_comment#\2/' -e 's/\([^#]\)\(server \+{{ hostname_port }}\)/\1#auto_comment#\2/' {{ nginx_upstream_conf_local }}
+          #delegate_to: localhost  #委托本机来做
+          when:
+            #- nginx_upstream_conf_remote is defined
+            - num.stdout.strip('\n')|int > 1
+
+        - name: Kickout [{{ hostname_port }}] from [{{ nginx_hosts_group }}] step 2 [copy,check (conf) and reload nginx(with 5s sleep)]
+          shell: /bin/sh {{ script_path }}/nginx_switch.sh {{ nginx_hosts_group }} {{ nginx_upstream_conf_local }} {{ nginx_upstream_conf_remote }} && sleep 5 || /bin/true
+          #when: nginx_upstream_conf_remote is defined
+          #delegate_to: localhost
+          register: result
+        - name: The previous task's stdout
+          debug:
+            var: result.stdout_lines
+        - name: The previous task's stderr
+          debug:
+            var: result.stderr_lines
+      when: nginx_upstream_conf_remote is defined
+      delegate_to: localhost  #委托本机来做
+
+    - name: Stop service {{ hostname_port }}(and sleep 10s)
+      remote_user: "{{ run_user }}"
+      shell: "{{ stop_command }} && sleep 10"
+      when: stop_command is defined
+      register: result
+    - name: The previous task's stdout
+      debug:
+        var: result.stdout_lines
+    - name: The previous task's stderr
+      debug:
+        var: result.stderr_lines
+
+    - name: Start service {{ hostname_port }}
+      remote_user: "{{ run_user }}"
+      shell: "{{ start_command }}"
+      when: start_command is defined
+      register: result
+    - name: The previous task's stdout
+      debug:
+        var: result.stdout_lines
+    - name: The previous task's stderr
+      debug:
+        var: result.stderr_lines
+
+    - name: "check_url [http://{{ inventory_hostname }}:{{ project_port }}/{{ check_url}}] for living in every {{ check_url_interval }}s"
+      shell: "curl -I -m 1 -o /dev/null -s -w %{http_code} http://{{ inventory_hostname }}:{{ project_port }}/{{ check_url }}"
+      register: result
+      until: result.stdout in ['200','301']
+      delegate_to: localhost  #委托本机来做
+      retries: "{{ check_url_retries }}"
+      delay: "{{ check_url_interval }}"
+      when: result.stderr == ""
+
+    - block:
+        - name: Rejoin [{{ hostname_port }}] to [{{ nginx_hosts_group }}] step 1 [modify upstream.conf with sed]
+          shell: sed --in-place=_sed_bak 's/\(#auto_comment#\)\+\(server \+{{ ip_port }}\)/\2/' {{ nginx_upstream_conf_local }}
+          #delegate_to: localhost
+          when:
+            #- nginx_upstream_conf_remote is defined
+            - num.stdout.strip('\n')|int > 1
+            - result is succeeded
+
+        - name: Rejoin [{{ hostname_port }}] to [{{ nginx_hosts_group }}] step 2 [copy,check (conf) and reload nginx]
+          shell: /bin/sh {{ script_path }}/nginx_switch.sh {{ nginx_hosts_group }} {{ nginx_upstream_conf_local }} {{ nginx_upstream_conf_remote }}
+          #delegate_to: localhost  #委托本机来做
+          when:
+            #- nginx_upstream_conf_remote is defined
+            - result is succeeded
+          register: result
+        - name: The previous task's stdout
+          debug:
+            var: result.stdout_lines
+        - name: The previous task's stderr
+          debug:
+            var: result.stderr_lines
+      when: nginx_upstream_conf_remote is defined
+      delegate_to: localhost  #委托本机来做
