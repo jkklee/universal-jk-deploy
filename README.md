@@ -27,7 +27,7 @@
     ![](https://s1.51cto.com/images/blog/201906/18/9bdf95e1b197eb137afca18929314ea8.png)
     ![](https://s1.51cto.com/images/blog/201906/18/2360c4c2794dc0253dcc12bfef615383.png)
     ![](https://s1.51cto.com/images/blog/201906/18/90cf0ae6c595d33ec0644d9afac37720.png)
-4. 接下来是主要部分，直接跳到Jenkins作业设置界面的`Build`部分，选择`执行shell`。这里也即上文体到的“配置界面”，该项目的目标是将（描述一次项目部署）所有变的东西都定义在此处。
+4. 接下来是**主要部分**，直接跳到Jenkins作业设置界面的`Build`部分，选择`执行shell`。这里也即上文体到的“配置界面”，该项目的目标是将（描述一次项目部署）所有变的东西都定义在此处。
     ```
     # 远程仓库名
     export repository="git@gitlab.xxxxx.com:my_group/my_project.git"
