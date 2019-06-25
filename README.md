@@ -3,18 +3,18 @@
 
 具体一点来讲：将打包或编译，服务的启停，服务在反向代理的摘除和重新加入等操作在底层脚本中予以组合，但是底层脚本不涉及到具体的服务启停命令或取值等，只提供逻辑框架。而描述项目部署的各种信息均在jenkins作业的配置界面中予以设置（这是在Jenkins中设置部署作业的最外层也是最直接看到的地方）。
 
-#### 依赖
+### 依赖
 当然是Jenkins和Ansible
 
-#### 大致可以将应用的部署分为两类
+### 大致可以将应用部署分为两类
 1. 经过反向代理的后端服务，例如：java或者python以及php等  
-**流程：从反向代理中踢除待更新后端 ----> 关闭后端 ----> 更新代码 ----> 启动后端 ----> url探活 ----> 后端重新加入反向代理**
+流程：从反向代理中踢除待更新后端 ----> 关闭后端 ----> 更新代码 ----> 启动后端 ----> url探活 ----> 后端重新加入反向代理
 2. 不经过反向代理，静态文件或者通过npm打包生成静态文件的项目  
-**流程：关闭后端[可选] ----> 更新代码 ----> 启动后端[可选]**
+流程：关闭后端[可选] ----> 更新代码 ----> 启动后端[可选]
 
 注：本套脚本目前仅支持采用nginx作为反向代理的场景
 
-#### 示例:
+### 示例:
 先来看一下部署界面  
 ![](https://s1.51cto.com/images/blog/201906/19/caf3d85ee4fa2096fc4153dfb92c8f2c.png)
 
@@ -27,7 +27,7 @@
     ![](https://s1.51cto.com/images/blog/201906/18/9bdf95e1b197eb137afca18929314ea8.png)
     ![](https://s1.51cto.com/images/blog/201906/18/2360c4c2794dc0253dcc12bfef615383.png)
     ![](https://s1.51cto.com/images/blog/201906/18/90cf0ae6c595d33ec0644d9afac37720.png)
-4. 接下来是主要部分，直接跳到Jenkins作业设置界面的`Build`部分，选择`执行shell`。这里也即上文体到的“配置界面”，该项目的目标是将（描述一次项目部署）所有变的东西都定义在此处。
+4. 接下来是**主要部分**，直接跳到Jenkins作业设置界面的`Build`部分，选择`执行shell`。这里也即上文体到的“配置界面”，该项目的目标是将（描述一次项目部署）所有变的东西都定义在此处。
     ```
     # 远程仓库名
     export repository="git@gitlab.xxxxx.com:my_group/my_project.git"
@@ -49,7 +49,7 @@
     # 备份的主目录(下级目录为项目名, 由程序自动添加)
     export base_backup_dir="/op-work/deploy/package_backup"
     # 停止和启动后端服务的命令及运行用户,不需要重启后端的(如静态页面等)[可置空]
-    export stop_command="ps aux | grep "$package_name" | grep -v grep | awk '{print \$2}'|xargs kill"
+    export stop_command="pid=\$(ps aux | grep "$package_name" | grep -v grep | awk '{print \$2}') && kill \$pid || /bin/true"
     export start_command="nohup java -Xmx512M -Xms512M -jar $dest_dir/$package_name &> $dest_dir/stdout.log &"
     export run_user="work"
     # 探活url,确保后端能正常响应后再将其加回nginx upstream中
