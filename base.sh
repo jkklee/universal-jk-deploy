@@ -51,7 +51,7 @@ build_pkg() {
 backup() {
     echo -e "\n===== [${FUNCNAME[0]}] ====="
     mkdir $backup_dir 2>/dev/null
-    log_cmd cp -a $workspace/$build_target/$package_name $backup_dir/`date +%Y%m%d-%H%M%S`_$branch_$package_name
+    log_cmd cp -a $workspace/$build_target/$package_name $backup_dir/`date +%Y%m%d-%H%M%S`_"$branch"_"$dest_env"_"$package_name"
     echo
 }
 
