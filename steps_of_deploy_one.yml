@@ -27,24 +27,27 @@
           when:
             #- nginx_upstream_conf_remote is defined
             - num.stdout.strip('\n')|int > 1
+          register: sed_res
 
         - name: Kickout [{{ hostname_port }}] from [{{ nginx_hosts_group }}] step 2 [copy,check (conf) and reload nginx(with 5s sleep)]
-          shell: /bin/sh {{ script_path }}/nginx_switch.sh {{ nginx_hosts_group }} {{ nginx_upstream_conf_local }} {{ nginx_upstream_conf_remote }} && sleep 5 || /bin/true
-          #when: nginx_upstream_conf_remote is defined
+          shell: /bin/sh {{ script_path }}/nginx_switch.sh {{ nginx_hosts_group }} {{ nginx_upstream_conf_local }} {{ nginx_upstream_conf_remote }} && sleep 5
+          when: sed_res is not skipped
           #delegate_to: localhost
           register: result
         - name: The previous task's stdout
           debug:
             var: result.stdout_lines
+          when: result is not skipped
         - name: The previous task's stderr
           debug:
             var: result.stderr_lines
+          when: result is not skipped
       when: nginx_upstream_conf_remote is defined
       delegate_to: localhost  #委托本机来做
 
-    - name: Stop service {{ hostname_port }}(and sleep 10s)
+    - name: Stop service {{ hostname_port }}(and sleep a specified time)
       remote_user: "{{ run_user }}"
-      shell: "{{ stop_command }} && sleep 10"
+      shell: "{{ stop_command }}"
       when: stop_command is defined
       register: result
     - name: The previous task's stdout
