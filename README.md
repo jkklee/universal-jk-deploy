@@ -49,7 +49,7 @@
     # 备份的主目录(下级目录为项目名, 由程序自动添加)
     export base_backup_dir="/op-work/deploy/package_backup"
     # 停止和启动后端服务的命令及运行用户,不需要重启后端的(如静态页面等)[可置空]
-    export stop_command="pid=\$(ps aux | grep "$package_name" | grep -v grep | awk '{print \$2}') && kill \$pid || /bin/true"
+    export stop_command="\"pid=\$(ps aux | grep $package_name | grep -v grep | awk '{print \$2}');[[ -n \$pid ]] && kill \$pid && sleep 10 || /bin/true\""
     export start_command="nohup java -Xmx512M -Xms512M -jar $dest_dir/$package_name &> $dest_dir/stdout.log &"
     export run_user="work"
     # 探活url,确保后端能正常响应后再将其加回nginx upstream中
