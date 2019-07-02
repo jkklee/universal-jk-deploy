@@ -22,7 +22,7 @@
           #when: nginx_upstream_conf_remote is defined
 
         - name: Kickout [{{ hostname_port }} from [{{ nginx_hosts_group }}] step 1 [modify upstream.conf with sed]
-          shell: sed --in-place=_sed_bak -e 's/\([^#]\)\(server \+{{ ip_port }}\)/\1#auto_comment#\2/' -e 's/\([^#]\)\(server \+{{ hostname_port }}\)/\1#auto_comment#\2/' {{ nginx_upstream_conf_local }}
+          shell: sed -e 's/\([^#]\)\(server \+{{ ip_port }}\)/\1#auto_comment#\2/' -e 's/\([^#]\)\(server \+{{ hostname_port }}\)/\1#auto_comment#\2/' {{ nginx_upstream_conf_local }} > /tmp/upstream.conf_{{ project_name }}
           #delegate_to: localhost  #委托本机来做
           when:
             #- nginx_upstream_conf_remote is defined
@@ -30,7 +30,7 @@
           register: sed_res
 
         - name: Kickout [{{ hostname_port }}] from [{{ nginx_hosts_group }}] step 2 [copy,check (conf) and reload nginx(with 5s sleep)]
-          shell: /bin/sh {{ script_path }}/nginx_switch.sh {{ nginx_hosts_group }} {{ nginx_upstream_conf_local }} {{ nginx_upstream_conf_remote }} && sleep 5
+          shell: /bin/sh {{ script_path }}/nginx_switch.sh {{ nginx_hosts_group }} {{ nginx_upstream_conf_local }} /tmp/upstream.conf_{{ project_name }} {{ nginx_upstream_conf_remote }} && sleep 5
           when: sed_res is not skipped
           #delegate_to: localhost
           register: result
@@ -80,7 +80,7 @@
 
     - block:
         - name: Rejoin [{{ hostname_port }}] to [{{ nginx_hosts_group }}] step 1 [modify upstream.conf with sed]
-          shell: sed --in-place=_sed_bak 's/\(#auto_comment#\)\+\(server \+{{ ip_port }}\)/\2/' {{ nginx_upstream_conf_local }}
+          shell: sed 's/\(#auto_comment#\)\+\(server \+{{ ip_port }}\)/\2/' {{ nginx_upstream_conf_local }} > /tmp/upstream.conf_{{ project_name }}
           #delegate_to: localhost
           when:
             #- nginx_upstream_conf_remote is defined
@@ -88,7 +88,7 @@
             - result is succeeded
 
         - name: Rejoin [{{ hostname_port }}] to [{{ nginx_hosts_group }}] step 2 [copy,check (conf) and reload nginx]
-          shell: /bin/sh {{ script_path }}/nginx_switch.sh {{ nginx_hosts_group }} {{ nginx_upstream_conf_local }} {{ nginx_upstream_conf_remote }}
+          shell: /bin/sh {{ script_path }}/nginx_switch.sh {{ nginx_hosts_group }} {{ nginx_upstream_conf_local }} /tmp/upstream.conf_{{ project_name }} {{ nginx_upstream_conf_remote }}
           #delegate_to: localhost  #委托本机来做
           when:
             #- nginx_upstream_conf_remote is defined

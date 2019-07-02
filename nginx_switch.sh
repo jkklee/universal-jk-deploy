@@ -30,7 +30,8 @@ source $script_path/base.sh
 nginx_hosts_group=$1  #这个取值要对应上ansible的hosts文件中的分组
 #action=$2
 nginx_upstream_conf_local=$2
-nginx_upstream_conf_remote=$3
+nginx_upstream_conf_local_tmp=$3
+nginx_upstream_conf_remote=$4
 #host=$3
 #port=$4
 
@@ -42,12 +43,10 @@ nginx_upstream_conf_remote=$3
 #    echo "----- Wrong action -----" && usage
 #fi
     
-diff $nginx_upstream_conf_local "$nginx_upstream_conf_local"_sed_bak
+diff $nginx_upstream_conf_local $nginx_upstream_conf_local_tmp
 if [ $? -ne 0 ];then
     log_cmd "ansible $nginx_hosts_group -m copy -a 'src=$nginx_upstream_conf_local dest=$nginx_upstream_conf_remote'"
     log_cmd "ansible $nginx_hosts_group -m shell -a 'nginx -t && nginx -s reload'"
-else
-    exit 1
 fi
 
 ##通过一个给定的upstream名, 得出其在upstream.conf中所配置的 [主机:端口]

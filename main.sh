@@ -70,6 +70,7 @@ echo "dest: $dest_dir/$package_name" >> $jenkins_var_files
 echo "batch: $batch" >> $jenkins_var_files
 echo "run_user: $run_user" >> $jenkins_var_files
 echo "dest_env: $dest_env" >> $jenkins_var_files
+echo "project_name: $project_name" >> $jenkins_var_files
 
 #滚动部署
 log_cmd "ansible-playbook $script_path/steps_of_deploy_one.yml --extra-vars \"@$workspace/.jenkins_var_files.yml\""
