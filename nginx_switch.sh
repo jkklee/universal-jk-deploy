@@ -14,7 +14,7 @@ usage() {
     echo "  nginx_upstream_conf_remote:  远程nginx配置文件主目录(/xxx/xxx/conf)"
     exit 1
 }
-[ $# -ne 3 ] && usage
+[ $# -ne 4 ] && usage
 
 #导入公共函数
 script_path=$(dirname "${BASH_SOURCE[0]}")
