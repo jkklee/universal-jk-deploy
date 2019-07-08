@@ -66,6 +66,7 @@ echo "check_url: $check_url" >> $jenkins_var_files
 echo "check_url_interval: `[ -n $check_url_interval ] && echo $check_url_interval || echo 5`" >> $jenkins_var_files
 echo "check_url_retries: `[ -n $check_url_timeout ] && echo $((check_url_timeout/$check_url_interval)) || echo 15`" >> $jenkins_var_files
 echo "src: $src" >> $jenkins_var_files
+echo "dest_dir: $dest_dir" >> $jenkins_var_files
 echo "dest: $dest_dir/$package_name" >> $jenkins_var_files
 echo "batch: $batch" >> $jenkins_var_files
 echo "run_user: $run_user" >> $jenkins_var_files
