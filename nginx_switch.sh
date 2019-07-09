@@ -1,6 +1,4 @@
 #!/bin/sh
-# jenkins机器上作通过git来集中管理nginx配置文件, 所有生产环境nginx的配置均由此同步过去
-# 额外好处, 可做限制只有干净的git目录才能同步至远程, 强制规范nginx配置文件的修改
 
 usage() {
     echo "Usage:"
@@ -14,7 +12,7 @@ usage() {
     echo "  nginx_upstream_conf_remote:  远程nginx配置文件主目录(/xxx/xxx/conf)"
     exit 1
 }
-[ $# -ne 4 ] && usage
+[ $# -ne 5 ] && usage
 
 #导入公共函数
 script_path=$(dirname "${BASH_SOURCE[0]}")
@@ -27,13 +25,11 @@ source $script_path/base.sh
 #[ -z ${NGINX_CONF[$2]}] && color_echo "nginx-group: [$2] has not configured in [$0]" && exit 1
 
 
-nginx_hosts_group=$1  #这个取值要对应上ansible的hosts文件中的分组
-#action=$2
-nginx_upstream_conf_local=$2
-nginx_upstream_conf_local_tmp=$3
-nginx_upstream_conf_remote=$4
-#host=$3
-#port=$4
+action=$1
+nginx_hosts_group=$2  #这个取值要对应上ansible的hosts文件中的分组
+nginx_upstream_conf_remote=$3
+ip_port=$4
+host_port=$5
 
 #if [ "$action" == "kickout" ];then  #踢出
 #    log_cmd 'sed -i "s/\(server[ ]\+$host:$port\)/#auto_comment#\1/" $nginx_upstream_conf_local'
@@ -42,12 +38,13 @@ nginx_upstream_conf_remote=$4
 #else
 #    echo "----- Wrong action -----" && usage
 #fi
-    
-diff $nginx_upstream_conf_local $nginx_upstream_conf_local_tmp
-if [ $? -ne 0 ];then
-    log_cmd "ansible $nginx_hosts_group -m copy -a 'src=$nginx_upstream_conf_local dest=$nginx_upstream_conf_remote'"
-    log_cmd "ansible $nginx_hosts_group -m shell -a 'nginx -t && nginx -s reload'"
+
+if [ $action == "kickout" ];then
+    log_cmd "ansible $nginx_hosts_group -m shell -a \"sed --in-place=_sed_bak_$host_port -e 's/\([^#]\)\(server \+$ip_port\)/\1#auto_comment#\2/' -e 's/\([^#]\)\(server \+$host_port\)/\1#auto_comment#\2/' $nginx_upstream_conf_remote\""
+elif [ $action == "rejoin" ];then
+    log_cmd "ansible $nginx_hosts_group -m shell -a \"sed --in-place=_sed_bak_$host_port -e 's/\(#auto_comment#\)\+\(server \+$ip_port\)/\2/' -e 's/\(#auto_comment#\)\+\(server \+$host_port\)/\2/' $nginx_upstream_conf_remote\""
 fi
+log_cmd "ansible $nginx_hosts_group -m shell -a \"mv -f $nginx_upstream_conf_remote'_sed_bak_'$host_port /tmp/ &>/dev/null && (diff $nginx_upstream_conf_remote /tmp/upstream.conf_sed_bak_$host_port &>/dev/null && /bin/true || (nginx -t && nginx -s reload))\""
 
 ##通过一个给定的upstream名, 得出其在upstream.conf中所配置的 [主机:端口]
 # 用awk去除两行之间的内容
