@@ -16,17 +16,17 @@
 
 ### 示例:
 先来看一下部署界面  
-![image](http://s1.51cto.com/images/blog/201906/19/caf3d85ee4fa2096fc4153dfb92c8f2c.png)
+![deploy-image](https://s2.51cto.com/images/20200322/1584862091865703.png)
 
 下面是一个以jar包运行并经过nginx反向代理的java应用在jenkins上通过此套脚本的配置示例  
 示例中将本套脚本的父目录定为了“/op-work/deploy/scripts”
 1. 由于脚本中包含了编译打包等逻辑，所以这里只需要创建“自由风格的软件项目”即可
 2. 接下来为构建增加参数，下图是`dest_env`和`branch`参数部分
-    ![image](http://s1.51cto.com/images/blog/201906/19/c12f73ef8d6748fa7cc88e47350c5bf2.png)
+    ![参数化构建过程](https://s2.51cto.com/images/20200322/1584862132311813.png)
 3. 接下来是`action`和`batch`以及`rollback_version`参数示例
-    ![image](http://s1.51cto.com/images/blog/201906/18/9bdf95e1b197eb137afca18929314ea8.png)
-    ![image](http://s1.51cto.com/images/blog/201906/18/2360c4c2794dc0253dcc12bfef615383.png)
-    ![image](http://s1.51cto.com/images/blog/201906/18/90cf0ae6c595d33ec0644d9afac37720.png)
+    ![action](https://s2.51cto.com/images/20200322/1584862142943339.png)
+    ![batch](https://s2.51cto.com/images/20200322/1584862148256936.png)
+    ![rollback](https://s2.51cto.com/images/20200322/1584862158607534.png)
 4. 接下来是**主要部分**，直接跳到Jenkins作业设置界面的`Build`部分，选择`执行shell`。这里也即上文体到的“配置界面”，该项目的目标是将（描述一次项目部署）所有变的东西都定义在此处。
     ```
     # 远程仓库名
